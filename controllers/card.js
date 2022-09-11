@@ -1,17 +1,19 @@
 const Card = require('../models/card');
-const errors = require('../constants/errors');
-const utilsEntity = require('../utils/errorEntityHelper');
-const utilsReject = require('../utils/errorRejectHelper');
 
-const { ENTITY_TYPE } = errors;
-const { errorEntityHandler } = utilsEntity;
-const { errorRejectHandler } = utilsReject;
+const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
 
 // GET /cards — returns all cards
 module.exports.getCards = (req, res) => {
   Card.find({})
     .then((card) => res.send(card))
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // POST /cards — creates a card
@@ -20,7 +22,14 @@ module.exports.createCard = (req, res) => {
 
   Card.create({ name, link, owner })
     .then((card) => res.send(card))
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // DELETE /cards/:cardId — delete a card by cardId
@@ -28,10 +37,18 @@ module.exports.deleteCardById = (req, res) => {
   Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
       if (!card) {
-        return errorEntityHandler(res, ENTITY_TYPE.card);
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
       }
       return res.send(card);
-    }).catch((err) => errorRejectHandler(res, err));
+    })
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // PUT /cards/:cardId/likes — put a line on a card
@@ -44,11 +61,18 @@ module.exports.likeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        return errorEntityHandler(res, ENTITY_TYPE.card);
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
       }
       return res.send(card);
     })
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // DELETE /cards/:cardId/likes — delete a like
@@ -61,9 +85,16 @@ module.exports.dislikeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        return errorEntityHandler(res, ENTITY_TYPE.card);
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
       }
       return res.send(card);
     })
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };

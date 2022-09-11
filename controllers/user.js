@@ -1,13 +1,7 @@
 const User = require('../models/user');
-const constants = require('../constants/constants');
-const errors = require('../constants/errors');
-const utilsEntity = require('../utils/errorEntityHelper');
-const utilsReject = require('../utils/errorRejectHelper');
 
-const { UPDATE_PARAMS } = constants;
-const { ENTITY_TYPE } = errors;
-const { errorEntityHandler } = utilsEntity;
-const { errorRejectHandler } = utilsReject;
+const { UPDATE_PARAMS } = require('../constants/constants');
+const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
 
 // POST /users — creates a user
 module.exports.createUser = (req, res) => {
@@ -15,14 +9,28 @@ module.exports.createUser = (req, res) => {
 
   User.create({ name, about, avatar })
     .then((user) => res.send(user))
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // GET /users — returns all users
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((user) => res.send(user))
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // GET /users/:userId - returns user by _id
@@ -30,11 +38,18 @@ module.exports.getUsersById = (req, res) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        return errorEntityHandler(res, ENTITY_TYPE.user);
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
       }
       return res.send(user);
     })
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // PATCH /users/me — update profile
@@ -44,12 +59,18 @@ module.exports.updateProfile = (req, res) => {
   User.findByIdAndUpdate(req.user._id, { name, about }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        errorEntityHandler(res, ENTITY_TYPE.user);
-        return;
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
       }
-      res.send(user);
+      return res.send(user);
     })
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
 
 // PATCH /users/me/avatar — update avatar
@@ -59,10 +80,16 @@ module.exports.updateAvatar = (req, res) => {
   User.findByIdAndUpdate(req.user._id, { avatar }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        errorEntityHandler(res, ENTITY_TYPE.user);
-        return;
+        return res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
       }
-      res.send(user);
+      return res.send(user);
     })
-    .catch((err) => errorRejectHandler(res, err));
+    .catch((err) => {
+      if (err.name === ERROR_TYPE.cast) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+      } if (err.name === ERROR_TYPE.validity) {
+        return res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      return res.status(STATUS_CODE.internalServerError).send({ message: MESSAGE_TYPE.default });
+    });
 };
