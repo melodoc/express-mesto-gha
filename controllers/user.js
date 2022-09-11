@@ -1,5 +1,11 @@
 const User = require('../models/user');
 
+const updateParams = {
+  new: true,
+  runValidators: true,
+  upsert: true,
+};
+
 // POST /users — creates a user
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
@@ -20,6 +26,24 @@ module.exports.getUsersById = (req, res) => {
   const { _id } = req.body;
 
   User.find({ _id })
+    .then((user) => res.send(user))
+    .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
+};
+
+// PATCH /users/me — update profile
+module.exports.updateProfile = (req, res) => {
+  const { name, about } = req.body;
+
+  User.findByIdAndUpdate(req.user._id, { name, about }, updateParams)
+    .then((user) => res.send(user))
+    .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
+};
+
+// PATCH /users/me/avatar — update avatar
+module.exports.updateAvatar = (req, res) => {
+  const { avatar } = req.body;
+
+  User.findByIdAndUpdate(req.user._id, { avatar }, updateParams)
     .then((user) => res.send(user))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
 };
