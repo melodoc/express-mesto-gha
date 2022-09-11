@@ -1,10 +1,7 @@
 const User = require('../models/user');
+const constants = require('../constants/constants');
 
-const updateParams = {
-  new: true,
-  runValidators: true,
-  upsert: true,
-};
+const { UPDATE_PARAMS } = constants;
 
 // POST /users — creates a user
 module.exports.createUser = (req, res) => {
@@ -34,7 +31,7 @@ module.exports.getUsersById = (req, res) => {
 module.exports.updateProfile = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about }, updateParams)
+  User.findByIdAndUpdate(req.user._id, { name, about }, UPDATE_PARAMS)
     .then((user) => res.send(user))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
 };
@@ -43,7 +40,7 @@ module.exports.updateProfile = (req, res) => {
 module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { avatar }, updateParams)
+  User.findByIdAndUpdate(req.user._id, { avatar }, UPDATE_PARAMS)
     .then((user) => res.send(user))
     .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
 };
