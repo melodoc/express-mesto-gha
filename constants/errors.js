@@ -4,8 +4,11 @@ const STATUS_CODE = {
   internalServerError: 500,
 };
 
-const errorHandler = (res, err) => {
-  res.status(STATUS_CODE.internalServerError).send({ message: `Произошла ошибка ${err.message}` });
+const ENTITY_TYPE = {
+  user: 'Пользователь',
+  card: 'Карточка',
 };
 
-module.exports = { STATUS_CODE, errorHandler };
+module.exports = {
+  STATUS_CODE, ENTITY_TYPE,
+};

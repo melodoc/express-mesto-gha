@@ -1,13 +1,17 @@
 const Card = require('../models/card');
 const errors = require('../constants/errors');
+const utilsEntity = require('../utils/errorEntityHelper');
+const utilsReject = require('../utils/errorRejectHelper');
 
-const { errorHandler } = errors;
+const { ENTITY_TYPE } = errors;
+const { errorEntityHandler } = utilsEntity;
+const { errorRejectHandler } = utilsReject;
 
 // GET /cards — returns all cards
 module.exports.getCards = (req, res) => {
   Card.find({})
     .then((card) => res.send(card))
-    .catch((err) => errorHandler(res, err));
+    .catch((err) => errorRejectHandler(res, err));
 };
 
 // POST /cards — creates a card
@@ -16,14 +20,18 @@ module.exports.createCard = (req, res) => {
 
   Card.create({ name, link, owner })
     .then((card) => res.send(card))
-    .catch((err) => errorHandler(res, err));
+    .catch((err) => errorRejectHandler(res, err));
 };
 
 // DELETE /cards/:cardId — delete a card by cardId
 module.exports.deleteCardById = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .then((card) => res.send(card))
-    .catch((err) => errorHandler(res, err));
+  Card.findByIdAndDelete(req.params.cardId)
+    .then((card) => {
+      if (!card) {
+        return errorEntityHandler(res, ENTITY_TYPE.card);
+      }
+      return res.send(card);
+    }).catch((err) => errorRejectHandler(res, err));
 };
 
 // PUT /cards/:cardId/likes — put a line on a card
@@ -34,8 +42,13 @@ module.exports.likeCard = (req, res) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .then((card) => res.send(card))
-    .catch((err) => errorHandler(res, err));
+    .then((card) => {
+      if (!card) {
+        return errorEntityHandler(res, ENTITY_TYPE.card);
+      }
+      return res.send(card);
+    })
+    .catch((err) => errorRejectHandler(res, err));
 };
 
 // DELETE /cards/:cardId/likes — delete a like
@@ -46,6 +59,11 @@ module.exports.dislikeCard = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .then((card) => res.send(card))
-    .catch((err) => errorHandler(res, err));
+    .then((card) => {
+      if (!card) {
+        return errorEntityHandler(res, ENTITY_TYPE.card);
+      }
+      return res.send(card);
+    })
+    .catch((err) => errorRejectHandler(res, err));
 };
