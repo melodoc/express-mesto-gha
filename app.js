@@ -9,9 +9,9 @@ const URI = 'mongodb://localhost:27017/mestodb';
 
 const app = express();
 
-// для собирания JSON-формата
+// to collect JSON format
 app.use(bodyParser.json());
-// для приёма веб-страниц внутри POST-запроса
+// for receiving web pages inside a POST request
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/users', user);

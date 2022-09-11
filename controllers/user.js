@@ -1,6 +1,6 @@
 const User = require('../models/user');
 
-// POST /users — создаёт пользователя
+// POST /users — creates a user
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
@@ -9,13 +9,13 @@ module.exports.createUser = (req, res) => {
     .catch((err) => res.status(500).send({ message: `Произошла ошибка ${err.message}` }));
 };
 
-// GET /users — возвращает всех пользователей
+// GET /users — returns all users
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((user) => res.send(user));
 };
 
-// GET /users/:userId - возвращает пользователя по _id
+// GET /users/:userId - returns user by _id
 module.exports.getUsersById = (req, res) => {
   const { _id } = req.body;
 
