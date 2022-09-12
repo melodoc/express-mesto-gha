@@ -1,12 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const constants = require('./constants/constants');
 const card = require('./routes/card');
 const user = require('./routes/user');
 
-const { DEFAULT_PORT } = constants;
-const { PORT = DEFAULT_PORT } = process.env;
+const { PORT = 3000 } = process.env;
 
 const app = express();
 
@@ -25,13 +23,12 @@ app.use((req, res, next) => {
 
 app.use('/users', user);
 app.use('/cards', card);
+app.all('/*', (req, res) => {
+  res.status(404).send({ message: 'Некорректный URL' });
+});
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
-}, (err) => {
-  if (err) throw err.message;
-  console.log(`Connected to ${'mongodb://localhost:27017/mestodb'}`);
+  useNewUrlParser: true,
 });
 
-app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
-});
+app.listen(PORT);
