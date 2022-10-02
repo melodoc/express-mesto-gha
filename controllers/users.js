@@ -116,7 +116,22 @@ module.exports.login = (req, res) => {
     })
     .catch((err) => {
       res
-        .status(401)
+        .status(STATUS_CODE.unauthorized)
+        .send({ message: err.message });
+    });
+};
+
+// GET /users/me — get profile info
+module.exports.getCurrentUser = (req, res) => {
+  const { _id } = req.user;
+
+  User.findById(_id)
+    .then((user) => {
+      res.send({ data: user });
+    })
+    .catch((err) => {
+      res
+        .status(STATUS_CODE.unauthorized)
         .send({ message: err.message });
     });
 };
