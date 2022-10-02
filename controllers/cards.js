@@ -1,16 +1,19 @@
 const Card = require('../models/card');
+const NotFoundError = require('../errors/not-found-err');
+const BadRequestError = require('../errors/bad-request-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
 const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
 
 // GET /cards — returns all cards
-module.exports.getCards = (_req, res) => {
+module.exports.getCards = (_req, res, next) => {
   Card.find({})
     .then((card) => res.send(card))
-    .catch(() => res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default }));
+    .catch(next);
 };
 
 // POST /cards — creates a card
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link, owner = req.user._id } = req.body;
 
   Card.create({ name, link, owner })
@@ -19,35 +22,45 @@ module.exports.createCard = (req, res) => {
       if (err.name === ERROR_TYPE.cast) {
         res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
         return;
-      } if (err.name === ERROR_TYPE.validity) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+      }
+      if (err.name === ERROR_TYPE.validity) {
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
     });
 };
 
 // DELETE /cards/:cardId — delete a card by cardId
-module.exports.deleteCardById = (req, res) => {
-  Card.findByIdAndDelete(req.params.cardId)
+module.exports.deleteCardById = (req, res, next) => {
+  Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
       }
-      res.send(card);
+      if (!card.owner.equals(req.user._id)) {
+        throw new ForbiddenError();
+      }
+      Card.findByIdAndDelete(req.params.cardId)
+        .then((foundCard) => {
+          if (!foundCard) {
+            throw new ForbiddenError();
+          }
+          res.send(foundCard);
+        })
+        .catch((err) => {
+          if (err.name === ERROR_TYPE.cast) {
+            next(new BadRequestError());
+            return;
+          }
+          next(err);
+        });
     })
-    .catch((err) => {
-      if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
-        return;
-      }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
-    });
+    .catch(next);
 };
 
 // PUT /cards/:cardId/likes — put a line on a card
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     // add _id to array if it's not there
@@ -56,22 +69,21 @@ module.exports.likeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
       }
       res.send(card);
     })
     .catch((err) => {
       if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
     });
 };
 
 // DELETE /cards/:cardId/likes — delete a like
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     // remove _id from the array
@@ -80,16 +92,15 @@ module.exports.dislikeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedCard });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
       }
       res.send(card);
     })
     .catch((err) => {
       if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
     });
 };

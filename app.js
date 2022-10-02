@@ -1,8 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const { errors } = require('celebrate');
 const card = require('./routes/cards');
 const user = require('./routes/users');
+const userAuth = require('./routes/auth');
+const auth = require('./middlewares/auth');
 
 const { PORT = 3000 } = process.env;
 
@@ -13,22 +16,30 @@ app.use(bodyParser.json());
 // for receiving web pages inside a POST request
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '631dfece3b346f53ef0aea5f',
-  };
-
-  next();
-});
-
 mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
 });
 
+app.use('/', userAuth);
+
+app.use(auth);
 app.use('/users', user);
 app.use('/cards', card);
 app.all('/*', (req, res) => {
   res.status(404).send({ message: 'Некорректный URL' });
+});
+
+app.use(errors());
+app.use((err, req, res, next) => {
+  const { statusCode = 500, message } = err;
+  res
+    .status(statusCode)
+    .send({
+      message: statusCode === 500
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
+  next();
 });
 
 app.listen(PORT);

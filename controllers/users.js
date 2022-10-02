@@ -1,21 +1,43 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/not-found-err');
+const BadRequestError = require('../errors/bad-request-err');
+const ConflictError = require('../errors/conflict-err');
+const UnauthorizedError = require('../errors/unauthorized-err');
 
-const { UPDATE_PARAMS } = require('../constants/constants');
+const { UPDATE_PARAMS, SECRET_KEY } = require('../constants/constants');
 const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
 
 // POST /users — creates a user
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  User.create({ name, about, avatar })
-    .then((user) => res.send(user))
+  bcrypt.hash(password, 10).then((hash) => User.create({
+    name,
+    about,
+    avatar,
+    email,
+    password: hash,
+  }).then((user) => res.send({
+    _id: user._id,
+    name: user.name,
+    about: user.about,
+    avatar: user.avatar,
+    email,
+  }))
     .catch((err) => {
       if (err.name === ERROR_TYPE.validity) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
-    });
+      if (err.code === 11000) {
+        next(new ConflictError());
+      }
+      next(err);
+    })).catch(next);
 };
 
 // GET /users — returns all users
@@ -26,68 +48,102 @@ module.exports.getUsers = (req, res) => {
 };
 
 // GET /users/:userId - returns user by _id
-module.exports.getUsersById = (req, res) => {
+module.exports.getUsersById = (req, res, next) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
       }
       res.send(user);
     })
     .catch((err) => {
       if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
     });
 };
 
 // PATCH /users/me — update profile
-module.exports.updateProfile = (req, res) => {
+module.exports.updateProfile = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
       }
-      res.send(user);
+      res.send({
+        _id: user._id,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+      });
     })
     .catch((err) => {
       if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+        next(new NotFoundError());
         return;
       } if (err.name === ERROR_TYPE.validity) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
     });
 };
 
 // PATCH /users/me/avatar — update avatar
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        res.status(STATUS_CODE.notFound).send({ message: MESSAGE_TYPE.absentedUser });
-        return;
+        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
       }
       res.send(user);
     })
     .catch((err) => {
       if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
+        next(new NotFoundError());
         return;
       } if (err.name === ERROR_TYPE.validity) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
+        next(new BadRequestError());
         return;
       }
-      res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
+      next(err);
+    });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        SECRET_KEY,
+        { expiresIn: '7d' },
+      );
+
+      res.send({ token });
+    })
+    .catch((err) => {
+      res
+        .status(STATUS_CODE.unauthorized)
+        .send({ message: err.message });
+    });
+};
+
+// GET /users/me — get profile info
+module.exports.getCurrentUser = (req, res, next) => {
+  const { _id } = req.user;
+  User.findById(_id)
+    .then((user) => {
+      res.send(user);
+    })
+    .catch(() => {
+      next(new UnauthorizedError());
     });
 };

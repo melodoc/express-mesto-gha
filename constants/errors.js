@@ -1,6 +1,7 @@
 const STATUS_CODE = {
   badRequest: 400,
   notFound: 404,
+  unauthorized: 401,
   internalError: 500,
 };
 
