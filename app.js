@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const { errors } = require('celebrate');
 const card = require('./routes/cards');
 const user = require('./routes/users');
 const userAuth = require('./routes/auth');
@@ -28,9 +29,9 @@ app.all('/*', (req, res) => {
   res.status(404).send({ message: 'Некорректный URL' });
 });
 
+app.use(errors());
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
-
   res
     .status(statusCode)
     .send({
@@ -38,6 +39,7 @@ app.use((err, req, res, next) => {
         ? 'На сервере произошла ошибка'
         : message,
     });
+  next();
 });
 
 app.listen(PORT);

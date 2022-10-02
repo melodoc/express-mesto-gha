@@ -6,13 +6,6 @@ const {
 const { URL_REG_EXP } = require('../constants/constants');
 
 router.get('/', getUsers);
-router.get('/:userId', celebrate({
-  params: Joi.object().keys({
-    userId: Joi.string().alphanum().length(24).required(),
-  }),
-  headers: Joi.object().keys({
-  }).unknown(true),
-}), getUsersById);
 router.get('/me', getCurrentUser);
 router.patch('/me', celebrate({
   body: Joi.object().keys({
@@ -22,6 +15,13 @@ router.patch('/me', celebrate({
   headers: Joi.object().keys({
   }).unknown(true),
 }), updateProfile);
+router.get('/:userId', celebrate({
+  params: Joi.object().keys({
+    userId: Joi.string().alphanum().length(24).required(),
+  }),
+  headers: Joi.object().keys({
+  }).unknown(true),
+}), getUsersById);
 router.patch('/me/avatar', celebrate({
   body: Joi.object().keys({
     avatar: Joi.string().uri().regex(URL_REG_EXP).required(),

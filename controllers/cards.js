@@ -22,7 +22,8 @@ module.exports.createCard = (req, res, next) => {
       if (err.name === ERROR_TYPE.cast) {
         res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
         return;
-      } if (err.name === ERROR_TYPE.validity) {
+      }
+      if (err.name === ERROR_TYPE.validity) {
         next(new BadRequestError());
         return;
       }
@@ -32,23 +33,30 @@ module.exports.createCard = (req, res, next) => {
 
 // DELETE /cards/:cardId — delete a card by cardId
 module.exports.deleteCardById = (req, res, next) => {
-  Card.findByIdAndDelete(req.params.cardId)
+  Card.findById(req.params.cardId)
     .then((card) => {
-      if (!card.owner.equals(req.user._id)) {
-        throw new ForbiddenError();
-      }
       if (!card) {
         throw new NotFoundError(MESSAGE_TYPE.absentedCard);
       }
-      res.send(card);
-    })
-    .catch((err) => {
-      if (err.name === ERROR_TYPE.cast) {
-        next(new BadRequestError());
-        return;
+      if (!card.owner.equals(req.user._id)) {
+        throw new ForbiddenError();
       }
-      next(err);
-    });
+      Card.findByIdAndDelete(req.params.cardId)
+        .then((foundCard) => {
+          if (!foundCard) {
+            throw new ForbiddenError();
+          }
+          res.send(foundCard);
+        })
+        .catch((err) => {
+          if (err.name === ERROR_TYPE.cast) {
+            next(new BadRequestError());
+            return;
+          }
+          next(err);
+        });
+    })
+    .catch(next);
 };
 
 // PUT /cards/:cardId/likes — put a line on a card
