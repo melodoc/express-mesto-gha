@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const { UPDATE_PARAMS } = require('../constants/constants');
+const { UPDATE_PARAMS, EXPIRATION_PERIOD, SECRET_KEY } = require('../constants/constants');
 const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
 
 // POST /users — creates a user
@@ -103,4 +103,20 @@ module.exports.updateAvatar = (req, res) => {
 
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
+
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        SECRET_KEY,
+        { expiresIn: '7d' },
+      );
+
+      res.send({ token });
+    })
+    .catch((err) => {
+      res
+        .status(401)
+        .send({ message: err.message });
+    });
 };
