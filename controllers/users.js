@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
 const { UPDATE_PARAMS } = require('../constants/constants');
@@ -5,17 +7,24 @@ const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors')
 
 // POST /users — creates a user
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  User.create({ name, about, avatar })
-    .then((user) => res.send(user))
+  bcrypt.hash(password, 10).then((hash) => User.create({
+    name,
+    about,
+    avatar,
+    email,
+    password: hash,
+  }).then((user) => res.send(user))
     .catch((err) => {
       if (err.name === ERROR_TYPE.validity) {
         res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.validity });
         return;
       }
       res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
-    });
+    }));
 };
 
 // GET /users — returns all users
@@ -90,4 +99,8 @@ module.exports.updateAvatar = (req, res) => {
       }
       res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default });
     });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
 };
