@@ -124,7 +124,6 @@ module.exports.login = (req, res) => {
 // GET /users/me — get profile info
 module.exports.getCurrentUser = (req, res) => {
   const { _id } = req.user;
-
   User.findById(_id)
     .then((user) => {
       res.send({ data: user });
