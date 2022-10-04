@@ -7,7 +7,7 @@ const ConflictError = require('../errors/conflict-err');
 const UnauthorizedError = require('../errors/unauthorized-err');
 
 const { UPDATE_PARAMS, SECRET_KEY } = require('../constants/constants');
-const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
+const { ERROR_TYPE, HTTP_RESPONSE } = require('../constants/errors');
 
 // POST /users — creates a user
 module.exports.createUser = (req, res, next) => {
@@ -15,36 +15,40 @@ module.exports.createUser = (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
 
-  bcrypt.hash(password, 10).then((hash) => User.create({
-    name,
-    about,
-    avatar,
-    email,
-    password: hash,
-  }).then((user) => res.send({
-    _id: user._id,
-    name: user.name,
-    about: user.about,
-    avatar: user.avatar,
-    email,
-  }))
-    .catch((err) => {
-      if (err.name === ERROR_TYPE.validity) {
-        next(new BadRequestError());
-        return;
-      }
-      if (err.code === 11000) {
-        next(new ConflictError());
-      }
-      next(err);
-    })).catch(next);
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    })
+      .then((user) => res.send({
+        _id: user._id,
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email,
+      }))
+      .catch((err) => {
+        if (err.name === ERROR_TYPE.validity) {
+          next(new BadRequestError());
+          return;
+        }
+        if (err.code === 11000) {
+          next(new ConflictError());
+        }
+        next(err);
+      }))
+    .catch(next);
 };
 
 // GET /users — returns all users
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((user) => res.send(user))
-    .catch(() => res.status(STATUS_CODE.internalError).send({ message: MESSAGE_TYPE.default }));
+    .catch(next);
 };
 
 // GET /users/:userId - returns user by _id
@@ -52,7 +56,7 @@ module.exports.getUsersById = (req, res, next) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.user);
       }
       res.send(user);
     })
@@ -72,7 +76,7 @@ module.exports.updateProfile = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, { name, about }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.user);
       }
       res.send({
         _id: user._id,
@@ -82,10 +86,7 @@ module.exports.updateProfile = (req, res, next) => {
       });
     })
     .catch((err) => {
-      if (err.name === ERROR_TYPE.cast) {
-        next(new NotFoundError());
-        return;
-      } if (err.name === ERROR_TYPE.validity) {
+      if (err.name === ERROR_TYPE.cast || err.name === ERROR_TYPE.validity) {
         next(new BadRequestError());
         return;
       }
@@ -100,15 +101,12 @@ module.exports.updateAvatar = (req, res, next) => {
   User.findByIdAndUpdate(req.user._id, { avatar }, UPDATE_PARAMS)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedUser);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.user);
       }
       res.send(user);
     })
     .catch((err) => {
-      if (err.name === ERROR_TYPE.cast) {
-        next(new NotFoundError());
-        return;
-      } if (err.name === ERROR_TYPE.validity) {
+      if (err.name === ERROR_TYPE.cast || err.name === ERROR_TYPE.validity) {
         next(new BadRequestError());
         return;
       }
@@ -116,23 +114,17 @@ module.exports.updateAvatar = (req, res, next) => {
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign(
-        { _id: user._id },
-        SECRET_KEY,
-        { expiresIn: '7d' },
-      );
+      const token = jwt.sign({ _id: user._id }, SECRET_KEY, { expiresIn: '7d' });
 
       res.send({ token });
     })
-    .catch((err) => {
-      res
-        .status(STATUS_CODE.unauthorized)
-        .send({ message: err.message });
+    .catch(() => {
+      next(new UnauthorizedError());
     });
 };
 
@@ -143,7 +135,7 @@ module.exports.getCurrentUser = (req, res, next) => {
     .then((user) => {
       res.send(user);
     })
-    .catch(() => {
-      next(new UnauthorizedError());
+    .catch((err) => {
+      next(err);
     });
 };

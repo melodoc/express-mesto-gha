@@ -3,7 +3,7 @@ const NotFoundError = require('../errors/not-found-err');
 const BadRequestError = require('../errors/bad-request-err');
 const ForbiddenError = require('../errors/forbidden-err');
 
-const { ERROR_TYPE, MESSAGE_TYPE, STATUS_CODE } = require('../constants/errors');
+const { ERROR_TYPE, HTTP_RESPONSE } = require('../constants/errors');
 
 // GET /cards — returns all cards
 module.exports.getCards = (_req, res, next) => {
@@ -19,11 +19,7 @@ module.exports.createCard = (req, res, next) => {
   Card.create({ name, link, owner })
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === ERROR_TYPE.cast) {
-        res.status(STATUS_CODE.badRequest).send({ message: MESSAGE_TYPE.cast });
-        return;
-      }
-      if (err.name === ERROR_TYPE.validity) {
+      if (err.name === ERROR_TYPE.cast || err.name === ERROR_TYPE.validity) {
         next(new BadRequestError());
         return;
       }
@@ -36,7 +32,7 @@ module.exports.deleteCardById = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.card);
       }
       if (!card.owner.equals(req.user._id)) {
         throw new ForbiddenError();
@@ -69,7 +65,7 @@ module.exports.likeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.card);
       }
       res.send(card);
     })
@@ -92,7 +88,7 @@ module.exports.dislikeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        throw new NotFoundError(MESSAGE_TYPE.absentedCard);
+        throw new NotFoundError(HTTP_RESPONSE.notFound.absentedMessage.card);
       }
       res.send(card);
     })

@@ -1,16 +1,17 @@
-const STATUS_CODE = {
-  badRequest: 400,
-  notFound: 404,
-  unauthorized: 401,
-  internalError: 500,
-};
-
-const MESSAGE_TYPE = {
-  cast: 'Одно или более свойств не могут быть распознаны.',
-  validity: 'Некорректный тип данных, длина поля или не хватает обязательных полей',
-  absentedUser: 'Пользователь с указанным id не найден',
-  absentedCard: 'Карточка с указанным id не найдена',
-  default: 'Внутренняя ошибка сервера',
+const HTTP_RESPONSE = {
+  badRequest: { status: 400, message: 'Некорректный тип данных, длина поля или не хватает обязательных полей' },
+  unauthorized: { status: 401, message: 'Ошибка авторизации' },
+  forbidden: { status: 403, message: 'Доступ запрещен' },
+  notFound: {
+    status: 404,
+    message: 'Некорректный URL',
+    absentedMessage: {
+      user: 'Пользователь с указанным id не найден',
+      card: 'Карточка с указанным id не найдена',
+    },
+  },
+  conflict: { status: 409, message: 'Сущность уже существует' },
+  internalError: { status: 500, message: 'На сервере произошла ошибка' },
 };
 
 const ERROR_TYPE = {
@@ -19,5 +20,6 @@ const ERROR_TYPE = {
 };
 
 module.exports = {
-  STATUS_CODE, ERROR_TYPE, MESSAGE_TYPE,
+  ERROR_TYPE,
+  HTTP_RESPONSE,
 };
