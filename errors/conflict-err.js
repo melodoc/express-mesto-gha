@@ -1,7 +1,9 @@
+const { HTTP_RESPONSE } = require('../constants/errors');
+
 class ConflictError extends Error {
-  constructor(message = 'Аккаунт уже существует') {
+  constructor(message = HTTP_RESPONSE.conflict.message) {
     super(message);
-    this.statusCode = 409;
+    this.statusCode = HTTP_RESPONSE.conflict.status;
   }
 }
 

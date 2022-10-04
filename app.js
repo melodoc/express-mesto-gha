@@ -6,6 +6,9 @@ const card = require('./routes/cards');
 const user = require('./routes/users');
 const userAuth = require('./routes/auth');
 const auth = require('./middlewares/auth');
+const commonError = require('./middlewares/common-error');
+const NotFoundError = require('./errors/not-found-err');
+const { HTTP_RESPONSE } = require('./constants/errors');
 
 const { PORT = 3000 } = process.env;
 
@@ -25,21 +28,10 @@ app.use('/', userAuth);
 app.use(auth);
 app.use('/users', user);
 app.use('/cards', card);
-app.all('/*', (req, res) => {
-  res.status(404).send({ message: 'Некорректный URL' });
+app.all('/*', (req, res, next) => {
+  next(new NotFoundError(HTTP_RESPONSE.notFound.message));
 });
 
 app.use(errors());
-app.use((err, req, res, next) => {
-  const { statusCode = 500, message } = err;
-  res
-    .status(statusCode)
-    .send({
-      message: statusCode === 500
-        ? 'На сервере произошла ошибка'
-        : message,
-    });
-  next();
-});
-
+app.use(commonError);
 app.listen(PORT);

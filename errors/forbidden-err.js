@@ -1,7 +1,9 @@
+const { HTTP_RESPONSE } = require('../constants/errors');
+
 class ForbiddenError extends Error {
-  constructor(message = 'Доступ запрещен') {
+  constructor(message = HTTP_RESPONSE.unauthorized.message) {
     super(message);
-    this.statusCode = 403;
+    this.statusCode = HTTP_RESPONSE.forbidden.status;
   }
 }
 
