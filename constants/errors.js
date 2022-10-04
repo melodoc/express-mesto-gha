@@ -14,6 +14,12 @@ const HTTP_RESPONSE = {
   internalError: { status: 500, message: 'На сервере произошла ошибка' },
 };
 
+const VALIDATION_ERROR_MESSAGE = {
+  URL: 'Указана некорректная ссылка',
+  email: 'Неверный адрес электронной почты',
+  credential: 'Неправильные почта или пароль',
+};
+
 const ERROR_TYPE = {
   cast: 'CastError',
   validity: 'ValidationError',
@@ -22,4 +28,5 @@ const ERROR_TYPE = {
 module.exports = {
   ERROR_TYPE,
   HTTP_RESPONSE,
+  VALIDATION_ERROR_MESSAGE,
 };
