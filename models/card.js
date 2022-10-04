@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { isURL } = require('validator');
+const { VALIDATION_ERROR_MESSAGE } = require('../constants/errors');
 
 const cardSchema = new mongoose.Schema({
   name: {
@@ -15,7 +16,7 @@ const cardSchema = new mongoose.Schema({
       validator(value) {
         return isURL(value);
       },
-      message: 'Указана некорректная ссылка',
+      message: VALIDATION_ERROR_MESSAGE.URL,
     },
   },
   likes: [
