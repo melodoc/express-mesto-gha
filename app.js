@@ -9,6 +9,7 @@ const auth = require('./middlewares/auth');
 const commonError = require('./middlewares/common-error');
 const NotFoundError = require('./errors/not-found-err');
 const { HTTP_RESPONSE } = require('./constants/errors');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const { PORT = 3000 } = process.env;
 
@@ -23,8 +24,8 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
 });
 
+app.use(requestLogger);
 app.use('/', userAuth);
-
 app.use(auth);
 app.use('/users', user);
 app.use('/cards', card);
@@ -32,6 +33,7 @@ app.all('/*', (req, res, next) => {
   next(new NotFoundError(HTTP_RESPONSE.notFound.message));
 });
 
+app.use(errorLogger);
 app.use(errors());
 app.use(commonError);
 app.listen(PORT);
